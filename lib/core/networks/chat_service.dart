@@ -19,7 +19,7 @@ class ChatService {
   Future<void> sendMessage({
     required String friendId,
     required String content,
-    File? file, // Truyền file nếu có
+    List<File>? attachments,
   }) async {
     // Tạo FormData
     Map<String, dynamic> data = {
@@ -27,11 +27,14 @@ class ChatService {
       'Content': content,
     };
 
-    // Nếu có file, thêm vào FormData
-    if (file != null) {
-      data['files'] = await MultipartFile.fromFile(
-        file.path,
-        filename: file.path.split('/').last,
+    if (attachments != null && attachments.isNotEmpty) {
+      data['files'] = await Future.wait(
+        attachments.map(
+              (f) => MultipartFile.fromFile(
+            f.path,
+            filename: f.path.split('/').last,
+          ),
+        ),
       );
     }
 

@@ -22,8 +22,8 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendMessage(String friendId, String content, {File? file}) async {
-    await _chatService.sendMessage(friendId: friendId, content: content, file: file);
+  Future<void> sendMessage(String friendId, String content, {List<File>? attachments}) async {
+    await _chatService.sendMessage(friendId: friendId, content: content, attachments: attachments);
     await loadMessages(friendId); // Cập nhật lại list sau khi gửi
   }
 }

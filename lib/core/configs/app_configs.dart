@@ -6,10 +6,8 @@ class AppConfig {
   static String get ip => dotenv.env['IP'] ?? '10.0.2.2';
   static String get port => dotenv.env['PORT'] ?? '8888';
 
-  // Đây là các thuộc tính "thông minh" mà App sẽ sử dụng
   static String get baseUrl => 'http://$ip:$port/api';
   static String get socketUrl => 'ws://$ip:$port';
-
-  // Bạn có thể thêm các config khác vào đây
+  static String get mediaBaseUrl => 'http://$ip:$port';
   static const int timeoutSeconds = 30;
 }

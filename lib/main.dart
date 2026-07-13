@@ -9,9 +9,14 @@ import '../core/networks/auth_service.dart';
 import '../auth/viewmodels/log_in.dart';
 import 'chat/viewmodels/dashboard.dart';
 import 'core/networks/dio_client.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await FlutterDownloader.initialize(
+    debug: true, // đặt false khi release
+    ignoreSsl: true, // hữu ích khi test với server local chưa có SSL hợp lệ
+  );
   final dioClient = DioClient();
   final authService = AuthService(dioClient);
   final chatService = ChatService(dioClient.dio);
