@@ -153,10 +153,11 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Consumer<ChatViewModel>(
               builder: (context, vm, child) {
                 return ListView.builder(
+                  reverse: true,
                   padding: EdgeInsets.all(10),
                   itemCount: vm.messages.length,
                   itemBuilder: (context, index) {
-                    final msg = vm.messages[index];
+                    final msg = vm.messages[vm.messages.length - 1 - index];
                     return _MessageBubble(msg: msg);
                   },
                 );

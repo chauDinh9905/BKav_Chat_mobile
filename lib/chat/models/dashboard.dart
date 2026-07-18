@@ -6,7 +6,7 @@ class Friend{
  final String avatar_path;
  bool isOnline;
  int unreadCount;
- final DateTime lastMsgTime;
+ DateTime lastMsgTime;
 
   Friend({
    required this.user_id,

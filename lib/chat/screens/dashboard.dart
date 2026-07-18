@@ -72,12 +72,12 @@ class DashboardState extends State<Dashboard>{
                       Positioned( right: 0, bottom: 0,child: Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.grey, shape: BoxShape.circle),),),
 
                     if(listFriend[index].unreadCount > 0)
-                      Positioned( right: -5, bottom: -5,child: Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle), constraints: BoxConstraints(minHeight: 18, minWidth: 18), child: Text('${listFriend[index].unreadCount}', style: TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center,),),)
+                      Positioned( right: -5, top: -5,child: Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle), constraints: BoxConstraints(minHeight: 18, minWidth: 18), child: Text('${listFriend[index].unreadCount}', style: TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center,),),)
                     ],
                   ),
                   title: Text(listFriend[index].display_name),
                   onTap: (){
-                    //return;
+                    dashboardViewModel.resetUnreadCount(listFriend[index].user_id);
                     Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(friendId: listFriend[index].user_id, friendName: listFriend[index].display_name, avatarUrl: listFriend[index].avatarUrl, isOnline: listFriend[index].isOnline,)));
                   },
                 );
