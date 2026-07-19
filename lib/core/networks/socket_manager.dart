@@ -102,4 +102,14 @@ class SocketManager {
     _connectedController.close();
     _messageController.close();
   }
+
+  void markSeen({required int userId, required int friendId}) {
+    if (_channel == null) return;
+    final json = {
+      "type": "mark_seen",
+      "userId": userId,
+      "friendId": friendId,
+    };
+    _channel!.sink.add(jsonEncode(json));
+  }
 }

@@ -78,7 +78,7 @@ class DashboardState extends State<Dashboard>{
                   title: Text(listFriend[index].display_name),
                   onTap: (){
                     dashboardViewModel.resetUnreadCount(listFriend[index].user_id);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(friendId: listFriend[index].user_id, friendName: listFriend[index].display_name, avatarUrl: listFriend[index].avatarUrl, isOnline: listFriend[index].isOnline,)));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(myId: dashboardViewModel.currentUser!.user_id, friendId: listFriend[index].user_id, friendName: listFriend[index].display_name, avatarUrl: listFriend[index].avatarUrl, isOnline: listFriend[index].isOnline,)));
                   },
                 );
               }

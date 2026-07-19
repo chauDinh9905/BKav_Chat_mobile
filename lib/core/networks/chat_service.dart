@@ -16,7 +16,7 @@ class ChatService {
     return [];
   }
 
-  Future<void> sendMessage({
+  Future<ChatMessage?> sendMessage({
     required String friendId,
     required String content,
     List<File>? attachments,
@@ -39,7 +39,11 @@ class ChatService {
     }
 
     FormData formData = FormData.fromMap(data);
-
-    await _dio.post('/message/send-message', data: formData);
+    final response = await _dio.post('/message/send-message', data: formData);
+    if (response.data['status'] == 1) {
+      final msgData = response.data['data'];
+      return ChatMessage.fromSendResponse(msgData);
+    }
+    return null;
   }
 }

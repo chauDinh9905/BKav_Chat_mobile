@@ -8,8 +8,10 @@ import 'package:first_flutter/core/configs/app_configs.dart';
 import '../viewmodels/chat.dart';
 import '../models/chat.dart';
 import '../../core/utils/download_helper.dart';
+import '../viewmodels/dashboard.dart';
 
 class ChatScreen extends StatefulWidget {
+  final int myId;
   final int friendId;
   final String friendName;
   final String avatarUrl;
@@ -17,6 +19,7 @@ class ChatScreen extends StatefulWidget {
 
   const ChatScreen({
     super.key,
+    required this.myId,
     required this.friendId,
     required this.friendName,
     required this.avatarUrl,
@@ -41,12 +44,18 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vm = context.read<ChatViewModel>();
+      vm.loadMessages(widget.friendId.toString());
+      vm.listenSocket(myId: widget.myId, friendId: widget.friendId);
       context.read<ChatViewModel>().loadMessages(widget.friendId.toString());
     });
   }
 
   @override
   void dispose() {
+    final vm = context.read<ChatViewModel>();
+    vm.stopListening();
+    context.read<DashboardViewModel>().resetUnreadCount(widget.friendId);
     _messageController.dispose();
     _textFieldFocus.dispose();
     super.dispose();
@@ -152,13 +161,17 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Consumer<ChatViewModel>(
               builder: (context, vm, child) {
+                ChatMessage? lastMine;
+                for (final m in vm.messages) {
+                  if (m.messageType == 1) lastMine = m;
+                }
                 return ListView.builder(
                   reverse: true,
                   padding: EdgeInsets.all(10),
                   itemCount: vm.messages.length,
                   itemBuilder: (context, index) {
                     final msg = vm.messages[vm.messages.length - 1 - index];
-                    return _MessageBubble(msg: msg);
+                    return _MessageBubble(msg: msg, showStatus: lastMine != null && msg.id == lastMine.id,);
                   },
                 );
               },
@@ -303,7 +316,8 @@ class _PendingThumb extends StatelessWidget {
 
 class _MessageBubble extends StatelessWidget {
   final ChatMessage msg;
-  const _MessageBubble({required this.msg});
+  final bool showStatus;
+  const _MessageBubble({required this.msg, this.showStatus = false});
 
   @override
   Widget build(BuildContext context) {
@@ -311,38 +325,64 @@ class _MessageBubble extends StatelessWidget {
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        margin: EdgeInsets.symmetric(vertical: 5),
-        padding: EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.blueAccent : Colors.grey[300],
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (msg.images.isNotEmpty) _buildImageGrid(context),
-            if (msg.files.isNotEmpty) _buildFileChips(context, isMe),
-            if (msg.content.trim().isNotEmpty)
-              Padding(
-                padding: EdgeInsets.only(
-                  top: (msg.images.isNotEmpty || msg.files.isNotEmpty) ? 6 : 0,
-                  left: 4,
-                  right: 4,
-                ),
-                child: Text(
-                  msg.content,
-                  style: TextStyle(color: isMe ? Colors.white : Colors.black),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            margin: EdgeInsets.symmetric(vertical: 5),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isMe ? Colors.blueAccent : Colors.grey[300],
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (msg.images.isNotEmpty) _buildImageGrid(context),
+                if (msg.files.isNotEmpty) _buildFileChips(context, isMe),
+                if (msg.content.trim().isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: (msg.images.isNotEmpty || msg.files.isNotEmpty) ? 6 : 0,
+                      left: 4,
+                      right: 4,
+                    ),
+                    child: Text(
+                      msg.content,
+                      style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (showStatus)
+            Padding(
+              padding: const EdgeInsets.only(right: 6, bottom: 4),
+              child: Text(
+                _statusText(msg.isSend),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: msg.isSend == 2 ? Colors.blueAccent : Colors.grey,
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
+  String _statusText(int status) {
+    switch (status) {
+      case 2:
+        return 'Đã xem';
+      case 1:
+        return 'Đã nhận';
+      default:
+        return 'Đã gửi';
+    }
+  }
   Widget _buildImageGrid(BuildContext context) {
     final images = msg.images;
     final crossAxisCount = images.length >= 3 ? 3 : images.length;

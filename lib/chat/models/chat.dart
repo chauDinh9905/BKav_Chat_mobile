@@ -16,7 +16,17 @@ class ChatMessage{
     required this.createAt,
     required this.messageType
   });
-
+  ChatMessage copyWith({int? isSend}) {
+    return ChatMessage(
+      id: id,
+      content: content,
+      files: files,
+      images: images,
+      isSend: isSend ?? this.isSend,
+      createAt: createAt,
+      messageType: messageType,
+    );
+  }
   factory ChatMessage.fromJson(Map<dynamic, dynamic> json){
     return ChatMessage(
       // 'id' trong server là ObjectId, khi trả về json nó là chuỗi _id
@@ -33,4 +43,17 @@ class ChatMessage{
     );
   }
 
+  factory ChatMessage.fromSendResponse(Map<dynamic, dynamic> json) {
+    return ChatMessage(
+      id: json['id']?.toString() ?? '',
+      content: json['Content'] ?? '',
+      files: (json['Files'] as List?) ?? [],
+      images: (json['Images'] as List?) ?? [],
+      isSend: json['isSend'] ?? 0,
+      createAt: json['CreatedAt'] != null
+          ? DateTime.parse(json['CreatedAt'].toString())
+          : DateTime.now(),
+      messageType: 1, // luôn là tin của mình vì đây là response của chính API gửi
+    );
+  }
 }
