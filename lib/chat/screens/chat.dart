@@ -33,6 +33,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _textFieldFocus = FocusNode();
+  late final ChatViewModel _chatViewModel;
+  late final DashboardViewModel _dashboardViewModel;
+  bool _viewModelsReady = false;
 
   // Danh sách file/ảnh đang chờ gửi (chưa submit)
   final List<File> _pendingImages = [];
@@ -50,12 +53,19 @@ class _ChatScreenState extends State<ChatScreen> {
       context.read<ChatViewModel>().loadMessages(widget.friendId.toString());
     });
   }
-
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_viewModelsReady) {
+      _chatViewModel = context.read<ChatViewModel>();
+      _dashboardViewModel = context.read<DashboardViewModel>();
+      _viewModelsReady = true;
+    }
+  }
   @override
   void dispose() {
-    final vm = context.read<ChatViewModel>();
-    vm.stopListening();
-    context.read<DashboardViewModel>().resetUnreadCount(widget.friendId);
+    _chatViewModel.stopListening();
+    _dashboardViewModel.resetUnreadCount(widget.friendId);
     _messageController.dispose();
     _textFieldFocus.dispose();
     super.dispose();

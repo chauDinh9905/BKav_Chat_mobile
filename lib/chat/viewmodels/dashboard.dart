@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:first_flutter/core/networks/auth_service.dart';
 import 'package:flutter/widgets.dart';
 import '../../core/configs/app_configs.dart';
+import '../../core/storage/cache_key_manager.dart';
+import '../../core/storage/dashboard_cache_service.dart';
 import '../models/dashboard.dart';
 import 'dart:convert';
 import '../../core/networks/socket_manager.dart';
@@ -8,6 +12,7 @@ import '../../core/networks/socket_manager.dart';
 
 class DashboardViewModel extends ChangeNotifier{
   final AuthService _authService;
+  final DashboardCacheService _cacheService = DashboardCacheService();
   DashboardModel? _currentUser;
   DashboardModel? get currentUser => _currentUser;
   List<Friend> _allaFriends = [];
@@ -24,16 +29,33 @@ class DashboardViewModel extends ChangeNotifier{
     _isLoading = true;
     notifyListeners();
     try {
+      final cachedUserId = await _authService.getLastUserId(); // xem bước 6
+      if (cachedUserId != null) {
+        await _cacheService.open(cachedUserId);
+        final cachedUser = _cacheService.loadCurrentUser();
+        final cachedFriends = _cacheService.loadFriends();
+        if (cachedUser != null) _currentUser = cachedUser;
+        if (cachedFriends.isNotEmpty) {
+          _allaFriends = cachedFriends;
+          _resortFriends();
+        }
+        _isLoading = false;
+        notifyListeners(); // hiển thị cache ngay, không chờ API
+      }
       // Gọi API lấy thông tin user
       final profileResponse = await _authService.getCurrentUserProfile();
       if (profileResponse['status'] == 1) {
         print("Dữ liệu nhận được: ${profileResponse['data']}");
         _currentUser = DashboardModel.fromJson(profileResponse);
+        if (cachedUserId == null) {
+          await _cacheService.open(_currentUser!.user_id);
+        }
+        await _cacheService.saveCurrentUser(_currentUser!);
       }
       // Gọi API lấy danh sách bạn bè
       _allaFriends = await _authService.getFriendList();
       _resortFriends();
-
+      await _cacheService.saveFriends(_allaFriends);
       await SocketManager.instance.connectToServer();
       if(_currentUser != null){
         SocketManager.instance.registerUser(_currentUser!.user_id);
@@ -79,6 +101,7 @@ class DashboardViewModel extends ChangeNotifier{
       return b.lastMsgTime.compareTo(a.lastMsgTime);
     });
     _applyFilter();
+    _cacheService.saveFriends(_allaFriends);
   }
   String get currentUserAvatarUrl {
     if (_currentUser == null || _currentUser!.avatar_path.isEmpty) return '';
@@ -136,7 +159,34 @@ class DashboardViewModel extends ChangeNotifier{
       notifyListeners();
     }
   }
-
+  Future<void> logOut() async {
+    if (_currentUser != null) {
+      final uid = _currentUser!.user_id;
+      SocketManager.instance.unregisterUser(_currentUser!.user_id);
+      await _cacheService.clear(); // xóa data cache, giữ nguyên key mã hóa
+      await _cacheService.close();
+      await CacheKeyManager.deleteKey(uid);
+    }
+    await _authService.logout();
+  }
+  Future<bool> changeAvatar(File file) async {
+    try {
+      final response = await _authService.updateAvatar(file);
+      if (response['status'] == 1) {
+        final profileResponse = await _authService.getCurrentUserProfile();
+        if (profileResponse['status'] == 1) {
+          _currentUser = DashboardModel.fromJson(profileResponse);
+          await _cacheService.saveCurrentUser(_currentUser!);
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Lỗi đổi ảnh đại diện: $e');
+      return false;
+    }
+  }
   @override
   void dispose() {
     if (_currentUser != null) {

@@ -2,11 +2,14 @@ import 'package:first_flutter/auth/viewmodels/sign_up.dart';
 import 'package:first_flutter/chat/viewmodels/chat.dart';
 import 'package:first_flutter/core/networks/chat_service.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'auth/screens/log_in.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../core/networks/auth_service.dart';
 import '../auth/viewmodels/log_in.dart';
+import 'chat/models/dashboard.dart';
 import 'chat/viewmodels/dashboard.dart';
 import 'core/networks/dio_client.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -17,6 +20,9 @@ void main() async {
     debug: true, // đặt false khi release
     ignoreSsl: true, // hữu ích khi test với server local chưa có SSL hợp lệ
   );
+  await Hive.initFlutter();
+  Hive.registerAdapter(FriendAdapter());
+  Hive.registerAdapter(DashboardModelAdapter());
   final dioClient = DioClient();
   final authService = AuthService(dioClient);
   final chatService = ChatService(dioClient.dio);

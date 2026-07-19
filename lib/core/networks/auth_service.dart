@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../configs/app_configs.dart';
 import '../../auth/models/log_in.dart';
 import '../../chat/models/dashboard.dart';
@@ -6,6 +10,7 @@ import 'dio_client.dart';
 
 class AuthService {
   final Dio _dio;
+  final _storage = const FlutterSecureStorage();
   AuthService(DioClient dioClient) : _dio = dioClient.dio;
 
   Future<UserModel> login(String username, String password) async {
@@ -85,6 +90,40 @@ class AuthService {
       return {};
     }catch(e){
       throw Exception('Failed to load user profile: $e');
+    }
+  }
+  Future<void> saveLastUserId(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_user_id', userId);
+  }
+
+  Future<int?> getLastUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('last_user_id');
+  }
+
+  Future<void> logout() async {
+    await _storage.delete(key: 'jwt_token'); // sửa key + nguồn lưu trữ cho đúng
+  }
+  Future<Map<String, dynamic>> updateAvatar(File file) async {
+    try {
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
+      });
+      final response = await _dio.post(
+        '/user/update',
+        data: formData,
+      );
+      if (response.data['status'] == 1) {
+        print('Cập nhật ảnh đại diện thành công');
+        return response.data;
+      }
+      print('Cập nhật ảnh đại diện thất bại');
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception('Kết nối máy chủ thất bại: ${e.message}');
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 }

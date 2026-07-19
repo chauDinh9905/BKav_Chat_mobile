@@ -1,9 +1,11 @@
 import 'package:first_flutter/chat/viewmodels/dashboard.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'chat.dart';
-
+import 'package:first_flutter/auth/screens/log_in.dart';
 class Dashboard extends StatefulWidget{
   const Dashboard({super.key});
 
@@ -37,9 +39,30 @@ class DashboardState extends State<Dashboard>{
                                child: currentUser == null || currentUser.avatar_path.isEmpty ?
                                Icon(Icons.person) : null),
                          ),
-                         onSelected: (value){
-                           if(value == 'log_out'){}
-                           else if(value == 'change_avatar'){}
+                         onSelected: (value) async{
+                           if(value == 'log_out'){
+                             await dashboardViewModel.logOut();
+                             if (context.mounted) {
+                               Navigator.pushAndRemoveUntil(
+                                 context,
+                                 MaterialPageRoute(builder: (context) => const LogIn()),
+                                     (route) => false,
+                               );
+                             }
+                           }
+                           else if(value == 'change_avatar'){
+                             final picker = ImagePicker();
+                             final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                             if (pickedFile != null) {
+                               final success = await dashboardViewModel.changeAvatar(File(pickedFile.path));
+                               if (context.mounted) {
+                                 ScaffoldMessenger.of(context).showSnackBar(
+                                   SnackBar(content: Text(success ? 'Cập nhật ảnh đại diện thành công' : 'Cập nhật thất bại')),
+                                 );
+                               }
+                             }
+                           }
+
                          },
                          itemBuilder: (context) => [
                            PopupMenuItem(value: 'change_avatar', child: Text('Thay ảnh đại diện')),

@@ -1,11 +1,20 @@
 import 'package:first_flutter/core/configs/app_configs.dart';
+import 'package:hive/hive.dart';
+part 'dashboard.g.dart';
 
+@HiveType(typeId: 0)
 class Friend{
+  @HiveField(0)
  final int user_id;
+  @HiveField(1)
  final String display_name;
+  @HiveField(2)
  final String avatar_path;
+  @HiveField(3)
  bool isOnline;
+  @HiveField(4)
  int unreadCount;
+  @HiveField(5)
  DateTime lastMsgTime;
 
   Friend({
@@ -33,10 +42,15 @@ class Friend{
     return '${AppConfig.baseUrl}/images$avatar_path';
   }
 }
+@HiveType(typeId: 1)
 class DashboardModel{
+  @HiveField(0)
   final int user_id;
+  @HiveField(1)
   final String username;
+  @HiveField(2)
   final String display_name;
+  @HiveField(3)
   final String avatar_path;
 
   DashboardModel({
