@@ -323,7 +323,26 @@ class _PendingThumb extends StatelessWidget {
     );
   }
 }
+class _ImageViewerButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ImageViewerButton({required this.icon, required this.onTap});
 
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.black54,
+          shape: BoxShape.circle,
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+}
 class _MessageBubble extends StatelessWidget {
   final ChatMessage msg;
   final bool showStatus;
@@ -409,8 +428,10 @@ class _MessageBubble extends StatelessWidget {
       itemCount: images.length,
       itemBuilder: (context, i) {
         final url = AppConfig.baseUrl + (images[i]['urlImage'] ?? '');
+        final fileName = images[i]['FileName'] as String? ??
+            url.split('/').last;
         return GestureDetector(
-          onTap: () => _openImageViewer(context, url),
+          onTap: () => _openImageViewer(context, url, fileName),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
@@ -467,12 +488,55 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  void _openImageViewer(BuildContext context, String url) {
+  void _openImageViewer(BuildContext context, String url, String fileName) {
     showDialog(
       context: context,
-      builder: (_) => Dialog(
+      barrierColor: Colors.black87,
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.black,
-        child: InteractiveViewer(child: Image.network(url)),
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                child: Center(
+                  child: Image.network(
+                    url,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Row(
+                children: [
+                  _ImageViewerButton(
+                    icon: Icons.download,
+                    onTap: () {
+                      debugPrint('Downloading image: $url');
+                      DownloadHelper.downloadFile(
+                        context,
+                        url: url,
+                        fileName: fileName,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _ImageViewerButton(
+                    icon: Icons.close,
+                    onTap: () => Navigator.of(dialogContext).pop(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

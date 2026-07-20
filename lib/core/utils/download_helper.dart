@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +24,7 @@ class DownloadHelper {
     await prefs.remove(_prefsKeyPrefix + url);
   }
 
-  /// Tra cứu task hiện tại (nếu có) và trạng thái + đường dẫn file thật
+  /// Tra cứu task hiện tại (nếu có) và trạng thái và  đường dẫn file thật
   static Future<DownloadTask?> _getExistingTask(String url) async {
     final taskId = await _getTaskId(url);
     if (taskId == null) return null;
@@ -32,7 +35,26 @@ class DownloadHelper {
     if (tasks == null || tasks.isEmpty) return null;
     return tasks.first;
   }
-
+  static Future<Directory?> _publicDownloadDir() async {
+    if (Platform.isAndroid) {
+      const path = '/storage/emulated/0/Download';
+      final dir = Directory(path);
+      if (await dir.exists()) return dir;
+      return null;
+    }
+    // iOS không có thư mục Download công khai kiểu này,
+    // flutter_downloader dùng app documents directory
+    return getApplicationDocumentsDirectory();
+  }
+  /// Kiểm tra xem đã có file cùng tên nằm sẵn trên máy chưa,
+  /// bất kể SharedPreferences có nhớ task hay không.
+  static Future<File?> _findExistingPhysicalFile(String fileName) async {
+    final dir = await _publicDownloadDir();
+    if (dir == null) return null;
+    final file = File('${dir.path}/$fileName');
+    if (await file.exists()) return file;
+    return null;
+  }
   static Future<void> downloadFile(
       BuildContext context, {
         required String url,
@@ -72,6 +94,23 @@ class DownloadHelper {
       // Task cũ lỗi, xoá và tải lại từ đầu
       await FlutterDownloader.remove(taskId: existing.taskId);
       await _clearTaskId(url);
+    }
+    final physicalFile = await _findExistingPhysicalFile(fileName);
+    if (physicalFile != null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File đã tồn tại trên máy, đang mở...')),
+        );
+      }
+      final result = await OpenFilex.open(physicalFile.path);
+      if (result.type != ResultType.done) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Không thể mở file: ${result.message}')),
+          );
+        }
+      }
+      return;
     }
     // Chưa từng tải, bắt đầu tải mới
     final dir = await getExternalStorageDirectory();
