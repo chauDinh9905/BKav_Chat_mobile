@@ -9,14 +9,15 @@ class Friend{
   @HiveField(1)
  final String display_name;
   @HiveField(2)
- final String avatar_path;
+ final String?avatar_path;
   @HiveField(3)
  bool isOnline;
   @HiveField(4)
  int unreadCount;
   @HiveField(5)
  DateTime lastMsgTime;
-
+  @HiveField(6)
+  String nickname;
   Friend({
    required this.user_id,
    required this.display_name,
@@ -24,11 +25,13 @@ class Friend{
     this.isOnline = false,
     this.unreadCount = 0,
     required this.lastMsgTime,
+    required this.nickname,
   });
   factory Friend.fromJson(Map<dynamic, dynamic> json){
     return Friend(
       user_id: json['FriendID'] ?? 0,
       display_name: json['FullName'] ?? '',
+      nickname: json['Nickname'] ?? '',
       avatar_path: json['Avatar'] ?? '',
       isOnline: json['isOnline'] ?? false,
       unreadCount: json['UnreadCount'] ?? 0,
@@ -37,9 +40,10 @@ class Friend{
           : DateTime.now(),
     );
   }
-  String get avatarUrl{
-    if(avatar_path.isEmpty) return '';
-    return '${AppConfig.baseUrl}/images$avatar_path';
+  String get avatarUrl {
+    final path = avatar_path;
+    if (path == null || path.isEmpty) return '';
+    return '${AppConfig.baseUrl}/images$path';
   }
 }
 @HiveType(typeId: 1)

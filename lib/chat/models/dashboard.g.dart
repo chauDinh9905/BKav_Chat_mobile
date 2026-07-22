@@ -1,11 +1,5 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'dashboard.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
 class FriendAdapter extends TypeAdapter<Friend> {
   @override
   final int typeId = 0;
@@ -23,13 +17,14 @@ class FriendAdapter extends TypeAdapter<Friend> {
       isOnline: fields[3] as bool,
       unreadCount: fields[4] as int,
       lastMsgTime: fields[5] as DateTime,
+      nickname: fields[6] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Friend obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.user_id)
       ..writeByte(1)
@@ -41,7 +36,9 @@ class FriendAdapter extends TypeAdapter<Friend> {
       ..writeByte(4)
       ..write(obj.unreadCount)
       ..writeByte(5)
-      ..write(obj.lastMsgTime);
+      ..write(obj.lastMsgTime)
+      ..writeByte(6)
+      ..write(obj.nickname);
   }
 
   @override

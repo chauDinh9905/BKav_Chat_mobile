@@ -3,8 +3,16 @@ import '../../chat/models/dashboard.dart';
 import 'cache_key_manager.dart';
 
 class DashboardCacheService {
-  static const _friendBoxPrefix = 'friends_box_';
-  static const _userBoxPrefix = 'user_box_';
+  // Tăng số này mỗi khi đổi field/kiểu trong Friend hoặc DashboardModel
+  // (thêm/xoá field, đổi nullable <-> non-nullable, đổi kiểu dữ liệu...)
+  static const _schemaVersion = 'v2';
+
+  static const _friendBoxPrefix = 'friends_box_${_schemaVersion}_';
+  static const _userBoxPrefix = 'user_box_${_schemaVersion}_';
+
+  // Các prefix đời cũ cần dọn rác khi phát hiện - thêm dần mỗi lần tăng version
+  static const _oldFriendBoxPrefixes = ['friends_box_'];
+  static const _oldUserBoxPrefixes = ['user_box_'];
 
   Box<Friend>? _friendBox;
   Box<DashboardModel>? _userBox;
@@ -14,14 +22,46 @@ class DashboardCacheService {
     final key = await CacheKeyManager.getOrCreateKey(userId);
     final cipher = HiveAesCipher(key);
 
-    _friendBox = await Hive.openBox<Friend>(
+    await _cleanupOldBoxes(userId);
+
+    _friendBox = await _openSafe<Friend>(
       '$_friendBoxPrefix$userId',
-      encryptionCipher: cipher,
+      cipher,
     );
-    _userBox = await Hive.openBox<DashboardModel>(
+    _userBox = await _openSafe<DashboardModel>(
       '$_userBoxPrefix$userId',
-      encryptionCipher: cipher,
+      cipher,
     );
+  }
+
+  /// Mở box, nếu đọc lỗi do data không khớp schema thì tự xoá và mở lại
+  Future<Box<T>> _openSafe<T>(String boxName, HiveAesCipher cipher) async {
+    try {
+      return await Hive.openBox<T>(boxName, encryptionCipher: cipher);
+    } catch (e) {
+      await Hive.deleteBoxFromDisk(boxName);
+      return await Hive.openBox<T>(boxName, encryptionCipher: cipher);
+    }
+  }
+
+  /// Xoá các box phiên bản cũ (schema cũ) của đúng userId này
+  Future<void> _cleanupOldBoxes(int userId) async {
+    for (final prefix in _oldFriendBoxPrefixes) {
+      final name = '$prefix$userId';
+      if (await Hive.boxExists(name)) {
+        try {
+          await Hive.deleteBoxFromDisk(name);
+        } catch (_) {}
+      }
+    }
+    for (final prefix in _oldUserBoxPrefixes) {
+      final name = '$prefix$userId';
+      if (await Hive.boxExists(name)) {
+        try {
+          await Hive.deleteBoxFromDisk(name);
+        } catch (_) {}
+      }
+    }
   }
 
   Future<void> saveFriends(List<Friend> friends) async {

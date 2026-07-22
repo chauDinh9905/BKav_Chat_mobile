@@ -126,4 +126,19 @@ class AuthService {
       throw Exception(e.toString());
     }
   }
+  Future<bool> setNickname({
+    required int friendId,
+    required String nickname,
+  }) async {
+
+    final response = await _dio.post(
+      "/nickname/set-nickname",
+      data: {
+        "FriendID": friendId,
+        "Nickname": nickname,
+      },
+    );
+
+    return response.data["status"] == 1;
+  }
 }

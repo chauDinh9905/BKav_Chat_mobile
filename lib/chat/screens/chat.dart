@@ -135,9 +135,67 @@ class _ChatScreenState extends State<ChatScreen> {
       _pendingFiles.clear();
     });
   }
+  Future<void> _showNicknameDialog() async {
+    final controller = TextEditingController();
+
+    final nickname = await showDialog<String>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Đổi biệt danh"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: "Nhập biệt danh",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Huỷ"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, controller.text);
+              },
+              child: const Text("Lưu"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (nickname == null) return;
+    final ok = await context
+        .read<DashboardViewModel>()
+        .setNickname(
+      widget.friendId,
+      nickname,
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? "Đổi biệt danh thành công"
+              : "Đổi biệt danh thất bại",
+        ),
+      ),
+    );
+    // bước sau sẽ gọi API
+  }
 
   @override
   Widget build(BuildContext context) {
+    final friend =context.watch<DashboardViewModel>().getFriend(widget.friendId);
+    final displayName =
+    friend == null
+        ? widget.friendName
+        : friend.nickname.isNotEmpty
+        ? friend.nickname
+        : friend.display_name;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
@@ -162,9 +220,15 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
             SizedBox(width: 10),
-            Text(widget.friendName),
+            Text(displayName),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: _showNicknameDialog,
+          ),
+        ],
       ),
       body: Column(
         children: [

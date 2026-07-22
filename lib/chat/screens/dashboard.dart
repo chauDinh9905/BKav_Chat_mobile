@@ -98,10 +98,16 @@ class DashboardState extends State<Dashboard>{
                       Positioned( right: -5, top: -5,child: Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle), constraints: BoxConstraints(minHeight: 18, minWidth: 18), child: Text('${listFriend[index].unreadCount}', style: TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center,),),)
                     ],
                   ),
-                  title: Text(listFriend[index].display_name),
+                  title: Text(
+                    listFriend[index].nickname.isNotEmpty
+                        ? listFriend[index].nickname
+                        : listFriend[index].display_name,
+                  ),
                   onTap: (){
                     dashboardViewModel.resetUnreadCount(listFriend[index].user_id);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(myId: dashboardViewModel.currentUser!.user_id, friendId: listFriend[index].user_id, friendName: listFriend[index].display_name, avatarUrl: listFriend[index].avatarUrl, isOnline: listFriend[index].isOnline,)));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(myId: dashboardViewModel.currentUser!.user_id, friendId: listFriend[index].user_id, friendName: listFriend[index].nickname.isNotEmpty
+                        ? listFriend[index].nickname
+                        : listFriend[index].display_name, avatarUrl: listFriend[index].avatarUrl, isOnline: listFriend[index].isOnline,)));
                   },
                 );
               }

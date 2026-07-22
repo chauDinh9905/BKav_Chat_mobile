@@ -114,6 +114,10 @@ class DashboardViewModel extends ChangeNotifier{
 
       if (type == 'presence') {
         _processStatusChange(data);
+      }else if (type == 'nickname_updated') {
+        print("Đã nhận nickname mới:");
+        print(data);
+        _processNicknameUpdated(data);
       } else if (data.containsKey('from') && data.containsKey('content')) {
         _processNewMessage(data);
       } else if (type != null) {
@@ -186,6 +190,56 @@ class DashboardViewModel extends ChangeNotifier{
       print('Lỗi đổi ảnh đại diện: $e');
       return false;
     }
+  }
+  Future<bool> setNickname(
+      int friendId,
+      String nickname,
+      ) async {
+    final ok = await _authService.setNickname(
+      friendId: friendId,
+      nickname: nickname,
+    );
+
+    if (!ok) return false;
+
+    final index =
+    _allaFriends.indexWhere((e) => e.user_id == friendId);
+
+    if (index != -1) {
+      _allaFriends[index].nickname = nickname;
+      _applyFilter();
+
+      await _cacheService.saveFriends(_allaFriends);
+
+      notifyListeners();
+    }
+
+    return true;
+  }
+  Friend? getFriend(int friendId) {
+    try {
+      return _allaFriends.firstWhere((e) => e.user_id == friendId);
+    } catch (_) {
+      return null;
+    }
+  }
+  void _processNicknameUpdated(Map<String, dynamic> data) {
+    final int friendId = (data['friend_id'] as num).toInt();
+    final String nickname = data['nickname'] ?? '';
+
+    final index = _allaFriends.indexWhere(
+          (e) => e.user_id == friendId,
+    );
+
+    if (index == -1) return;
+
+    _allaFriends[index].nickname = nickname;
+
+    _applyFilter();
+
+    _cacheService.saveFriends(_allaFriends);
+
+    notifyListeners();
   }
   @override
   void dispose() {
